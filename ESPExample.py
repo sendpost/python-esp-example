@@ -503,7 +503,7 @@ class ESPExample:
                         if from_name:
                             print(f"  From: {from_name} <{from_email}>")
                         else:
-                        print(f"  From: {from_email}")
+                            print(f"  From: {from_email}")
                     else:
                         print(f"  From: N/A")
                 if message.to:
