@@ -1,4 +1,3 @@
 # SendPost Python SDK Example Dependencies
 
-sendpost-python-sdk
-
+../sendpost-python-sdk

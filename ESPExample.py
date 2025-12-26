@@ -37,7 +37,7 @@ from sendpost_python_sdk.api import (
 from sendpost_python_sdk.models import (
     CreateSubAccountRequest, CreateWebhookRequest, CreateDomainRequest,
     EmailMessageObject, EmailAddress, Recipient,
-    IPPoolCreateRequest, EIP
+    IPPoolCreateRequest, EIP, IPPool
 )
 from sendpost_python_sdk.exceptions import ApiException
 
@@ -65,6 +65,7 @@ class ESPExample:
         self.created_webhook_id: Optional[int] = None
         self.created_domain_id: Optional[str] = None
         self.created_ip_pool_id: Optional[int] = None
+        self.created_ip_pool_name: Optional[str] = None
         self.sent_message_id: Optional[str] = None
     
     def _get_sub_account_config(self) -> Configuration:
@@ -236,8 +237,8 @@ class ESPExample:
             traceback.print_exc()
     
     def add_domain(self):
-        """Step 5: Add a sending domain"""
-        print("\n=== Step 5: Adding Domain ===")
+        """Step 3: Add a sending domain"""
+        print("\n=== Step 3: Adding Domain ===")
         
         try:
             config = self._get_sub_account_config()
@@ -268,16 +269,14 @@ class ESPExample:
             print(f"✗ Failed to add domain:")
             print(f"  Status code: {e.status}")
             print(f"  Response body: {e.body}")
-            import traceback
-            traceback.print_exc()
         except Exception as e:
             print(f"✗ Unexpected error:")
             import traceback
             traceback.print_exc()
     
     def list_domains(self):
-        """Step 6: List all domains"""
-        print("\n=== Step 6: Listing All Domains ===")
+        """Step 3: List all domains"""
+        print("\n=== Step 3: Listing All Domains ===")
         
         try:
             config = self._get_sub_account_config()
@@ -307,8 +306,8 @@ class ESPExample:
             traceback.print_exc()
     
     def send_transactional_email(self):
-        """Step 7: Send a transactional email"""
-        print("\n=== Step 7: Sending Transactional Email ===")
+        """Step 5: Send a transactional email"""
+        print("\n=== Step 5: Sending Transactional Email ===")
         
         try:
             config = self._get_sub_account_config()
@@ -346,6 +345,11 @@ class ESPExample:
                 email_message.track_opens = True
                 email_message.track_clicks = True
                 
+                # Use IP pool if available
+                if self.created_ip_pool_name:
+                    email_message.ippool = self.created_ip_pool_name
+                    print(f"  Using IP Pool: {self.created_ip_pool_name}")
+                
                 # Add custom headers for tracking
                 email_message.headers = {
                     "X-Order-ID": "12345",
@@ -379,8 +383,8 @@ class ESPExample:
             traceback.print_exc()
     
     def send_marketing_email(self):
-        """Step 8: Send a marketing email"""
-        print("\n=== Step 8: Sending Marketing Email ===")
+        """Step 5: Send a marketing email"""
+        print("\n=== Step 5: Sending Marketing Email ===")
         
         try:
             config = self._get_sub_account_config()
@@ -403,6 +407,10 @@ class ESPExample:
                 
                 email_message.to = [recipient]
                 
+                # Use IP pool if available
+                if self.created_ip_pool_name:
+                    email_message.ippool = self.created_ip_pool_name
+                
                 # Set email content
                 email_message.subject = "Special Offer - 20% Off Everything!"
                 email_message.html_body = (
@@ -413,6 +421,10 @@ class ESPExample:
                     "</body></html>"
                 )
                 email_message.text_body = "Special Offer! Get 20% off on all products. Use code: SAVE20. Visit: https://example.com/shop"
+                
+                # Use IP pool if available
+                if self.created_ip_pool_name:
+                    email_message.ippool = self.created_ip_pool_name
                 
                 # Enable tracking
                 email_message.track_opens = True
@@ -455,8 +467,8 @@ class ESPExample:
             traceback.print_exc()
     
     def get_message_details(self):
-        """Step 9: Retrieve message details"""
-        print("\n=== Step 9: Retrieving Message Details ===")
+        """Step 6: Retrieve message details"""
+        print("\n=== Step 6: Retrieving Message Details ===")
         
         if not self.sent_message_id:
             print("✗ No message ID available. Please send an email first.")
@@ -484,9 +496,16 @@ class ESPExample:
                     print(f"  Submitted At: {message.submitted_at}")
                 
                 if message.var_from:
-                    from_email = message.var_from.get('email', 'N/A') if isinstance(message.var_from, dict) else 'N/A'
-                    print(f"  From: {from_email}")
-                
+                    # Handle Person object (after YAML fix) or dict (backward compatibility)
+                    if message.var_from.email:
+                        from_email = message.var_from.email or 'N/A'
+                        from_name = message.var_from.name or ''
+                        if from_name:
+                            print(f"  From: {from_name} <{from_email}>")
+                        else:
+                        print(f"  From: {from_email}")
+                    else:
+                        print(f"  From: N/A")
                 if message.to:
                     to_email = message.to.email if hasattr(message.to, 'email') else 'N/A'
                     print(f"  To: {to_email}")
@@ -514,8 +533,8 @@ class ESPExample:
             traceback.print_exc()
     
     def get_sub_account_stats(self):
-        """Step 10: Get sub-account statistics"""
-        print("\n=== Step 10: Getting Sub-Account Statistics ===")
+        """Step 7: Get sub-account statistics"""
+        print("\n=== Step 7: Getting Sub-Account Statistics ===")
         
         if not self.created_sub_account_id:
             print("✗ No sub-account ID available. Please create or list sub-accounts first.")
@@ -545,9 +564,9 @@ class ESPExample:
                 total_delivered = 0
                 
                 for stat in stats:
-                    print(f"\n  Date: {stat.date}")
-                    if stat.stats:
-                        stat_data = stat.stats
+                    print(f"\n  Date: {stat.var_date}")
+                    if stat.stat:
+                        stat_data = stat.stat
                         print(f"    Processed: {stat_data.processed or 0}")
                         print(f"    Delivered: {stat_data.delivered or 0}")
                         print(f"    Dropped: {stat_data.dropped or 0}")
@@ -575,8 +594,8 @@ class ESPExample:
             traceback.print_exc()
     
     def get_aggregate_stats(self):
-        """Step 11: Get aggregate statistics"""
-        print("\n=== Step 11: Getting Aggregate Statistics ===")
+        """Step 7: Get aggregate statistics"""
+        print("\n=== Step 7: Getting Aggregate Statistics ===")
         
         if not self.created_sub_account_id:
             print("✗ No sub-account ID available. Please create or list sub-accounts first.")
@@ -620,8 +639,8 @@ class ESPExample:
             traceback.print_exc()
     
     def list_ips(self):
-        """Step 12: List all IPs"""
-        print("\n=== Step 12: Listing All IPs ===")
+        """Step 4: List all IPs"""
+        print("\n=== Step 4: Listing All IPs ===")
         
         try:
             config = self._get_account_config()
@@ -653,8 +672,8 @@ class ESPExample:
             traceback.print_exc()
     
     def create_ip_pool(self):
-        """Step 13: Create an IP Pool"""
-        print("\n=== Step 13: Creating IP Pool ===")
+        """Step 4: Create an IP Pool"""
+        print("\n=== Step 4: Creating IP Pool ===")
         
         try:
             config = self._get_account_config()
@@ -671,24 +690,28 @@ class ESPExample:
                 
                 # Create IP pool request
                 pool_request = IPPoolCreateRequest()
-                pool_request.name = f"Marketing Pool - {int(datetime.now().timestamp())}"
+                pool_name = f"Marketing_Pool_{int(datetime.now().timestamp())}"
+                pool_request.name = pool_name
                 pool_request.routing_strategy = 0  # 0 = RoundRobin, 1 = EmailProviderStrategy
+                pool_request.warmup_interval = 24  # Required by backend: warmup interval in hours (must be > 0)
+                pool_request.overflow_strategy = 0  # 0 = None, 1 = Use overflow pool
                 
                 # Add IPs to the pool (convert IP to EIP)
                 pool_ips = []
                 # Add first available IP (you can add more)
                 if ips:
-                    eip = EIP()
-                    eip.public_ip = ips[0].public_ip
+                    eip = EIP(public_ip=ips[0].public_ip)
                     pool_ips.append(eip)
                 pool_request.ips = pool_ips
                 
                 print(f"Creating IP pool: {pool_request.name}")
                 print("  Routing Strategy: Round Robin")
                 print(f"  IPs: {len(pool_ips)}")
+                print(f"  Warmup Interval: {pool_request.warmup_interval} hours")
                 
                 ip_pool = ip_pools_api.create_ip_pool(pool_request)
                 self.created_ip_pool_id = ip_pool.id
+                self.created_ip_pool_name = ip_pool.name  # Store the IP pool name for use in emails
                 
                 print("✓ IP pool created successfully!")
                 print(f"  ID: {self.created_ip_pool_id}")
@@ -708,8 +731,8 @@ class ESPExample:
             traceback.print_exc()
     
     def list_ip_pools(self):
-        """Step 14: List all IP Pools"""
-        print("\n=== Step 14: Listing All IP Pools ===")
+        """Step 4: List all IP Pools"""
+        print("\n=== Step 4: Listing All IP Pools ===")
         
         try:
             config = self._get_account_config()
@@ -742,8 +765,8 @@ class ESPExample:
             traceback.print_exc()
     
     def get_account_stats(self):
-        """Step 15: Get account-level statistics"""
-        print("\n=== Step 15: Getting Account-Level Statistics ===")
+        """Step 8: Get account-level statistics"""
+        print("\n=== Step 8: Getting Account-Level Statistics ===")
         
         try:
             config = self._get_account_config()
@@ -805,22 +828,22 @@ class ESPExample:
         self.add_domain()
         self.list_domains()
         
-        # Step 4: Send emails
-        self.send_transactional_email()
-        self.send_marketing_email()
-        
-        # Step 5: Retrieve message details
-        self.get_message_details()
-        
-        # Step 6: Monitor statistics
-        self.get_sub_account_stats()
-        self.get_aggregate_stats()
-        
-        # Step 7: Manage IPs and IP pools
+        # Step 4: Manage IPs and IP pools (create before sending emails)
         self.list_ips()
         self.create_ip_pool()
         self.list_ip_pools()
         
+        # Step 5: Send emails (using the created IP pool)
+        self.send_transactional_email()
+        self.send_marketing_email()
+        
+        # Step 6: Retrieve message details
+        self.get_message_details()
+        
+        # Step 7: Monitor statistics
+        self.get_sub_account_stats()
+        self.get_aggregate_stats()
+
         # Step 8: Get account-level overview
         self.get_account_stats()
         
